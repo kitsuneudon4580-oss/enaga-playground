@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Enaga Playground</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1f426;</text></svg>" />
+  <script type="module" crossorigin src="/enaga-playground/assets/index-aWgRAuKp.js"></script>
+  <link rel="stylesheet" crossorigin href="/enaga-playground/assets/index-Bv5b5a6e.css">
+</head>
+<body>
+  <header>
+    <h1>Enaga Playground</h1>
+    <select id="example-selector">
+      <option value="">-- Select Example --</option>
+      <option value="hello" selected>Hello World (Movement)</option>
+      <option value="quaternion">Quaternion Rotation</option>
+      <option value="resource">Resource System</option>
+      <option value="fn_call">Function Calls</option>
+      <option value="complex">Complex Numbers</option>
+      <option value="if_stmt">Conditional Logic</option>
+    </select>
+    <button id="format-btn">Format</button>
+    <button id="compile-btn">Compile</button>
+    <select id="codegen-mode" title="Code generation mode">
+      <option value="scalar">Scalar</option>
+      <option value="simd">SIMD</option>
+      <option value="parallel">Parallel</option>
+      <option value="simd_parallel">SIMD + Parallel</option>
+      <option value="gpu">GPU</option>
+    </select>
+    <button id="lang-btn" title="Switch diagnostic language">EN / JA</button>
+    <span id="status">Loading...</span>
+  </header>
+  <main>
+    <div id="editor-pane"></div>
+    <div id="output-pane"></div>
+  </main>
+  <footer>
+    <div id="diagnostics-pane"></div>
+  </footer>
+</body>
+</html>
