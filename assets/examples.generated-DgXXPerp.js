@@ -234,7 +234,6 @@ system MoveEnemies in Update {
 
 component Pos { x: q32_16, y: q32_16 }
 component Target { tx: q32_16, ty: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 // A function that linearly interpolates between two values
@@ -249,17 +248,15 @@ fn approach(current: q32_16, target: q32_16, speed: q32_16) -> q32_16 {
 }
 
 system MoveToTarget in Update {
-    using (time: read Time)
     foreach (pos: write Pos, tgt: read Target) {
-        pos.x = approach(pos.x, tgt.tx, 0.5_q * time.dt);
-        pos.y = approach(pos.y, tgt.ty, 0.5_q * time.dt);
+        pos.x = approach(pos.x, tgt.tx, 0.5_q * delta_time());
+        pos.y = approach(pos.y, tgt.ty, 0.5_q * delta_time());
     }
 }
 `,ja:`// 型付き引数と戻り値を持つユーザー定義関数。
 
 component Pos { x: q32_16, y: q32_16 }
 component Target { tx: q32_16, ty: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 // 線形補間を行う関数
@@ -274,10 +271,9 @@ fn approach(current: q32_16, target: q32_16, speed: q32_16) -> q32_16 {
 }
 
 system MoveToTarget in Update {
-    using (time: read Time)
     foreach (pos: write Pos, tgt: read Target) {
-        pos.x = approach(pos.x, tgt.tx, 0.5_q * time.dt);
-        pos.y = approach(pos.y, tgt.ty, 0.5_q * time.dt);
+        pos.x = approach(pos.x, tgt.tx, 0.5_q * delta_time());
+        pos.y = approach(pos.y, tgt.ty, 0.5_q * delta_time());
     }
 }
 `}},fixed_point:{category:"Type System",title:{en:"Fixed-Point Types",ja:"固定小数点型"},source:{en:`// Enaga uses fixed-point numbers instead of floating-point.
@@ -446,13 +442,11 @@ system CheckArrival in Update {
 // Trigonometric functions use Taylor series with configurable order.
 
 component Wave { angle: q32_16, value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Oscillate in Update {
-    using (t: read Time)
     foreach (w: write Wave) {
-        w.angle += t.dt;
+        w.angle += delta_time();
 
         // sin/cos with default precision (order 5)
         w.value = sin(w.angle) * 10_q;
@@ -472,13 +466,11 @@ system Oscillate in Update {
 // 三角関数はテイラー級数で計算、精度の指定が可能です。
 
 component Wave { angle: q32_16, value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Oscillate in Update {
-    using (t: read Time)
     foreach (w: write Wave) {
-        w.angle += t.dt;
+        w.angle += delta_time();
 
         // sin/cos デフォルト精度（次数 5）
         w.value = sin(w.angle) * 10_q;
@@ -498,17 +490,15 @@ system Oscillate in Update {
 // Use polar/cis for rotation, arg/norm for analysis.
 
 component WaveState { angle: q32_16, amplitude: q32_16 }
-resource Time { dt: q32_16 }
 phase Simulation
 
 system WaveEvolution in Simulation {
-    using (t: read Time)
     foreach (w: write WaveState) {
         // Create complex number from polar form
         var z = polar(w.amplitude, w.angle);
 
         // Rotate by multiplying with cis(angle) = cos + i*sin
-        var rotation = cis(1.5_q * t.dt);
+        var rotation = cis(1.5_q * delta_time());
         z = z * rotation;
 
         // Extract components
@@ -525,17 +515,15 @@ system WaveEvolution in Simulation {
 // polar/cis で回転、arg/norm で解析します。
 
 component WaveState { angle: q32_16, amplitude: q32_16 }
-resource Time { dt: q32_16 }
 phase Simulation
 
 system WaveEvolution in Simulation {
-    using (t: read Time)
     foreach (w: write WaveState) {
         // 極形式から複素数を生成
         var z = polar(w.amplitude, w.angle);
 
         // cis(角度) = cos + i*sin の乗算で回転
-        var rotation = cis(1.5_q * t.dt);
+        var rotation = cis(1.5_q * delta_time());
         z = z * rotation;
 
         // 成分の取り出し
@@ -553,7 +541,6 @@ system WaveEvolution in Simulation {
 
 component Orientation { q: Quaternion }
 component AngularVelocity { axis: vec3, speed: q32_16 }
-resource Time { dt: q32_16 }
 phase Physics
 
 fn make_rotation(axis: vec3, angle: q32_16) -> Quaternion {
@@ -565,10 +552,9 @@ fn make_rotation(axis: vec3, angle: q32_16) -> Quaternion {
 }
 
 system Rotate in Physics {
-    using (t: read Time)
     foreach (o: write Orientation, av: read AngularVelocity) {
         // Build a delta rotation quaternion
-        var dq = make_rotation(av.axis, av.speed * t.dt);
+        var dq = make_rotation(av.axis, av.speed * delta_time());
 
         // Apply rotation by multiplication
         o.q = dq * o.q;
@@ -579,7 +565,6 @@ system Rotate in Physics {
 
 component Orientation { q: Quaternion }
 component AngularVelocity { axis: vec3, speed: q32_16 }
-resource Time { dt: q32_16 }
 phase Physics
 
 fn make_rotation(axis: vec3, angle: q32_16) -> Quaternion {
@@ -591,10 +576,9 @@ fn make_rotation(axis: vec3, angle: q32_16) -> Quaternion {
 }
 
 system Rotate in Physics {
-    using (t: read Time)
     foreach (o: write Orientation, av: read AngularVelocity) {
         // 差分回転クォータニオンを構築
-        var dq = make_rotation(av.axis, av.speed * t.dt);
+        var dq = make_rotation(av.axis, av.speed * delta_time());
 
         // 乗算で回転を適用
         o.q = dq * o.q;
@@ -603,11 +587,9 @@ system Rotate in Physics {
 `}},vectors:{category:"Math",title:{en:"Vectors & Matrices",ja:"ベクトルと行列"},source:{en:`// Built-in vector (vec2, vec3, vec4) and matrix (mat3, mat4) types.
 
 component Spatial { pos: vec3, dir: vec3 }
-resource Time { dt: q32_16 }
 phase Update
 
 system VectorDemo in Update {
-    using (t: read Time)
     foreach (s: write Spatial) {
         // Vector construction
         var forward = vec3(1_q, 0_q, 0_q);
@@ -620,17 +602,15 @@ system VectorDemo in Update {
         var perp = cross(forward, up);
 
         // Move along direction
-        s.pos = s.pos + s.dir * t.dt;
+        s.pos = s.pos + s.dir * delta_time();
     }
 }
 `,ja:`// 組み込みベクトル型 (vec2, vec3, vec4) と行列型 (mat3, mat4)。
 
 component Spatial { pos: vec3, dir: vec3 }
-resource Time { dt: q32_16 }
 phase Update
 
 system VectorDemo in Update {
-    using (t: read Time)
     foreach (s: write Spatial) {
         // ベクトルの構築
         var forward = vec3(1_q, 0_q, 0_q);
@@ -643,19 +623,17 @@ system VectorDemo in Update {
         var perp = cross(forward, up);
 
         // 方向に沿って移動
-        s.pos = s.pos + s.dir * t.dt;
+        s.pos = s.pos + s.dir * delta_time();
     }
 }
 `}},interpolation:{category:"Math",title:{en:"Interpolation",ja:"補間関数"},source:{en:`// Built-in interpolation functions for smooth animations.
 
 component Anim { t: q32_16, x: q32_16, y: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Interpolate in Update {
-    using (time: read Time)
     foreach (a: write Anim) {
-        a.t += time.dt * 0.1_q;
+        a.t += delta_time() * 0.1_q;
         var t = saturate(a.t);   // Clamp to [0, 1]
 
         // Linear interpolation
@@ -673,13 +651,11 @@ system Interpolate in Update {
 `,ja:`// 滑らかなアニメーションのための組み込み補間関数。
 
 component Anim { t: q32_16, x: q32_16, y: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Interpolate in Update {
-    using (time: read Time)
     foreach (a: write Anim) {
-        a.t += time.dt * 0.1_q;
+        a.t += delta_time() * 0.1_q;
         var t = saturate(a.t);   // [0, 1] にクランプ
 
         // 線形補間
@@ -698,13 +674,11 @@ system Interpolate in Update {
 // Each takes a normalized t in [0, 1] and returns eased value.
 
 component Anim { t: q32_16, value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system EasingDemo in Update {
-    using (time: read Time)
     foreach (a: write Anim) {
-        a.t += time.dt * 0.01_q;
+        a.t += delta_time() * 0.01_q;
         var t = saturate(a.t);
 
         // Quadratic (gentle acceleration)
@@ -729,13 +703,11 @@ system EasingDemo in Update {
 // 正規化された t ∈ [0, 1] を受け取り、イージング後の値を返します。
 
 component Anim { t: q32_16, value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system EasingDemo in Update {
-    using (time: read Time)
     foreach (a: write Anim) {
-        a.t += time.dt * 0.01_q;
+        a.t += delta_time() * 0.01_q;
         var t = saturate(a.t);
 
         // 二次関数（緩やかな加速）
@@ -821,22 +793,19 @@ system Move in Physics {
 component Pos { x: q32_16 }
 component Target { x: q32_16 }
 component Smooth { value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 // move_toward: move at constant speed, stop when reached
 system MoveToward in Update {
-    using (t: read Time)
     foreach (p: write Pos, tgt: read Target) {
-        p.x = move_toward(p.x, tgt.x, 5_q * t.dt);
+        p.x = move_toward(p.x, tgt.x, 5_q * delta_time());
     }
 }
 
 // decay: exponential decay (smooth damping)
 system Damping in Update {
-    using (t: read Time)
     foreach (s: write Smooth) {
-        s.value = decay(s.value, 0_q, 0.5_q, t.dt);
+        s.value = decay(s.value, 0_q, 0.5_q, delta_time());
     }
 }
 `,ja:`// 組み込みの移動ユーティリティ関数。
@@ -844,22 +813,19 @@ system Damping in Update {
 component Pos { x: q32_16 }
 component Target { x: q32_16 }
 component Smooth { value: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 // move_toward: 一定速度で移動し、到達したら停止
 system MoveToward in Update {
-    using (t: read Time)
     foreach (p: write Pos, tgt: read Target) {
-        p.x = move_toward(p.x, tgt.x, 5_q * t.dt);
+        p.x = move_toward(p.x, tgt.x, 5_q * delta_time());
     }
 }
 
 // decay: 指数関数的減衰（滑らかなダンピング）
 system Damping in Update {
-    using (t: read Time)
     foreach (s: write Smooth) {
-        s.value = decay(s.value, 0_q, 0.5_q, t.dt);
+        s.value = decay(s.value, 0_q, 0.5_q, delta_time());
     }
 }
 `}},rng:{category:"Game Patterns",title:{en:"Random Numbers",ja:"乱数生成"},source:{en:`// Deterministic random number generation using PCG.
@@ -995,15 +961,13 @@ system AnalyzeScores in Update {
 `}},rotation_2d:{category:"Game Patterns",title:{en:"2D Rotation",ja:"2D回転"},source:{en:`// Built-in 2D rotation and angle functions.
 
 component Pos { x: q32_16, y: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Spin in Update {
-    using (t: read Time)
     foreach (p: write Pos) {
         // Rotate a 2D vector by an angle
         var v = vec2(p.x, p.y);
-        var rotated = rotate2(v, t.dt);
+        var rotated = rotate2(v, delta_time());
         p.x = rotated.x;
         p.y = rotated.y;
 
@@ -1017,15 +981,13 @@ system Spin in Update {
 `,ja:`// 組み込みの2D回転・角度関数。
 
 component Pos { x: q32_16, y: q32_16 }
-resource Time { dt: q32_16 }
 phase Update
 
 system Spin in Update {
-    using (t: read Time)
     foreach (p: write Pos) {
         // 2Dベクトルを角度で回転
         var v = vec2(p.x, p.y);
-        var rotated = rotate2(v, t.dt);
+        var rotated = rotate2(v, delta_time());
         p.x = rotated.x;
         p.y = rotated.y;
 
